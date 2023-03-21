@@ -11,6 +11,13 @@ export type Account = {
   tx: string;
 };
 
+export type AggregatedTx = {
+  from: string;
+  to: string;
+  rawValue: String;
+  value: number;
+};
+
 export async function newAccount(accountId: string, mysql): Promise<boolean> {
   const newAccount = await loadAccount(accountId, mysql);
 

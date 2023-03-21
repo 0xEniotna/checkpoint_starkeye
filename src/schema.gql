@@ -1,5 +1,15 @@
 scalar BigInt
 
+type AggregatedTransaction {
+  id: String! # Equal to <fromAddress>-<toAddress>
+  from: String
+  to: String
+  rawValue: String # Raw value without decimals
+  value: Float # Parsed value based on token decimals
+  token: Token
+  modified: Int # Last modified timestamp in seconds
+}
+
 type AccountToken {
   id: String! # Equal to <tokenAddress>-<accountAddress>
   account: String
