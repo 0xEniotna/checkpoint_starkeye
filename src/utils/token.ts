@@ -4,10 +4,7 @@ import tokenAbi from '../abis/erc20.json';
 
 const provider = new starknet.Provider({
   sequencer: {
-    baseUrl: 'https://alpha4.starknet.io',
-    feederGatewayUrl: 'feeder_gateway',
-    gatewayUrl: 'gateway',
-    network: 'goerli-alpha'
+    network: 'mainnet-alpha'
   }
 });
 

@@ -12,7 +12,7 @@ const schemaFile = path.join(__dirname, `${dir}../src/schema.gql`);
 const schema = fs.readFileSync(schemaFile, 'utf8');
 
 const checkpointOptions = {
-  logLevel: LogLevel.Info,
+  logLevel: LogLevel.Debug,
   prettifyLogs: true // uncomment in local dev
 };
 
@@ -34,5 +34,5 @@ app.use(cors({ maxAge: 86400 }));
 // mount Checkpoint's GraphQL API on path /
 app.use('/', checkpoint.graphql);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));

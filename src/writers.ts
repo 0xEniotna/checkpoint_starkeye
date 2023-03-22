@@ -11,13 +11,6 @@ export async function handleTransfer({
   mysql
 }: Parameters<CheckpointWriter>[0]) {
   if (!rawEvent) return;
-  // console.log('raw', rawEvent);
-
-  if (
-    rawEvent.from_address !==
-    '0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7'.toLowerCase()
-  )
-    return;
 
   if (
     rawEvent.data[1] ===
@@ -25,11 +18,11 @@ export async function handleTransfer({
   )
     return;
 
-  // if (!(await isErc20(rawEvent.from_address, block.block_number))) return;
+  if (rawEvent.data[0] === '0x0'.toLowerCase() || rawEvent.data[1] === '0x0'.toLowerCase()) return;
 
+  // if (!(await isErc20(rawEvent.from_address, block.block_number))) return;
   const format = 'from, to, value(uint256)';
   const data: any = getEvent(rawEvent.data, format);
-  console.log('data', data);
   let token: Token;
   let fromAccount: Account;
   let toAccount: Account;
@@ -65,9 +58,13 @@ export async function handleTransfer({
     toAccount = await loadAccount(toId, mysql);
   }
 
+  console.log('data.from', data.from);
+  console.log('data.to', data.to);
+  console.log('data.value', convertToDecimal(data.value, token.decimals));
+
   const agrFromId = `${data.from.slice(2)}-${data.to.slice(2)}`;
   if (await newAggreg(agrFromId, mysql)) {
-    aggregatedTxFrom = await createAggregated(agrFromId, block);
+    aggregatedTxFrom = await createAggregated(agrFromId, token, data.from, data.to, block);
     await mysql.queryAsync(`INSERT IGNORE INTO aggregatedtransactions SET ?`, [aggregatedTxFrom]);
   } else {
     aggregatedTxFrom = await loadAggregated(agrFromId, mysql);
@@ -76,15 +73,12 @@ export async function handleTransfer({
   const agrToId = `${data.to.slice(2)}-${data.from.slice(2)}`;
   // Then with toAccount
   if (await newAggreg(agrToId, mysql)) {
-    aggregatedTxTo = await createAggregated(agrToId, block);
+    aggregatedTxTo = await createAggregated(agrToId, token, data.to, data.from, block);
     await mysql.queryAsync(`INSERT IGNORE INTO aggregatedtransactions SET ?`, [aggregatedTxTo]);
   } else {
     aggregatedTxTo = await loadAggregated(agrToId, block);
   }
 
-  // Updating To
-  aggregatedTxFrom.to = toAccount.account;
-  aggregatedTxTo.to = fromAccount.account;
   // Updating raw balances
   aggregatedTxFrom.rawValue = BigInt(aggregatedTxFrom.rawValue) - BigInt(data.value);
   aggregatedTxTo.rawValue = BigInt(aggregatedTxTo.rawValue) + BigInt(data.value);
@@ -94,25 +88,24 @@ export async function handleTransfer({
   // Updating modified field
   aggregatedTxFrom.modified = block.timestamp;
   aggregatedTxTo.modified = block.timestamp;
-  // Updating token field
-  aggregatedTxFrom.token = token.id;
-  aggregatedTxTo.token = token.id;
 
-  // Indexing accounts
+  console.log('aggregatedTxFrom', aggregatedTxFrom);
+  console.log('aggregatedTxTo', aggregatedTxTo);
+
   await mysql.queryAsync(
-    `UPDATE aggregatedtransactions SET to=${aggregatedTxFrom.to}, value=${
+    `UPDATE aggregatedtransactions SET rawValue=${aggregatedTxFrom.rawValue.toString()}, value=${
       aggregatedTxFrom.value
-    }, rawBalance=${aggregatedTxFrom.rawValue.toString()}, modified=${
-      aggregatedTxFrom.modified
-    }, token=${aggregatedTxFrom.token}  WHERE id='${aggregatedTxFrom.id}'`
+    }, token='${aggregatedTxFrom.token}', modified=${aggregatedTxFrom.modified} WHERE id='${
+      aggregatedTxFrom.id
+    }'`
   );
 
   await mysql.queryAsync(
-    `UPDATE aggregatedtransactions SET to=${aggregatedTxTo.to}, value=${
+    `UPDATE aggregatedtransactions SET rawValue=${aggregatedTxTo.rawValue.toString()}, value=${
       aggregatedTxTo.value
-    }, rawBalance=${aggregatedTxTo.rawValue.toString()}, modified=${
-      aggregatedTxTo.modified
-    }, token=${aggregatedTxTo.token} WHERE id='${aggregatedTxTo.id}'`
+    }, token='${aggregatedTxTo.token}', modified=${aggregatedTxTo.modified} WHERE id='${
+      aggregatedTxTo.id
+    }'`
   );
 
   // Updating balances

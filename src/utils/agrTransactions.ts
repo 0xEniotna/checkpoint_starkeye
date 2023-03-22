@@ -1,4 +1,5 @@
 import { convertToDecimal } from './utils';
+import { Token } from './token';
 
 export type AggregatedTx = {
   id: string;
@@ -16,14 +17,20 @@ export async function newAggreg(aggregatedId: string, mysql): Promise<boolean> {
   return !newAggreg;
 }
 
-export async function createAggregated(accountId: string, block): Promise<AggregatedTx> {
+export async function createAggregated(
+  aggregatedId: string,
+  token: Token,
+  account: string,
+  accountTo: string,
+  block
+): Promise<AggregatedTx> {
   return {
-    id: accountId,
-    from: accountId.split('-')[1],
-    to: '',
+    id: aggregatedId,
+    from: account,
+    to: accountTo,
     rawValue: BigInt(0),
-    value: convertToDecimal(0, 18),
-    token: '',
+    value: convertToDecimal(0, token.decimals),
+    token: token.id,
     modified: block.timestamp / 1000
   };
 }
