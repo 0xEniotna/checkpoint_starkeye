@@ -34,12 +34,13 @@ export async function createAggregated(
     modified: block.timestamp / 1000
   };
 }
-
 export async function loadAggregated(aggregatedId: string, mysql): Promise<AggregatedTx> {
-  const tx: AggregatedTx = await mysql.queryAsync(
-    `SELECT * FROM aggregatedtransactions WHERE id = ?`,
-    [aggregatedId]
-  );
+  const tx = await mysql.queryAsync(`SELECT * FROM aggregatedtransactions WHERE id = ?`, [
+    aggregatedId
+  ]);
+  if (tx.length === 0) {
+    console.error('No Aggregated data found for the provided ID:', aggregatedId);
+  }
 
   return tx[0];
 }

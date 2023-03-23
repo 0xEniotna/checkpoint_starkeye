@@ -1,6 +1,6 @@
 import type { CheckpointWriter } from '@snapshot-labs/checkpoint';
 import { convertToDecimal, getEvent } from './utils/utils';
-import { createToken, isErc20, loadToken, newToken, Token } from './utils/token';
+import { createToken, loadToken, newToken, Token } from './utils/token';
 import { createAccount, newAccount, Account, loadAccount } from './utils/account';
 import { createAggregated, loadAggregated, AggregatedTx, newAggreg } from './utils/agrTransactions';
 
@@ -20,7 +20,6 @@ export async function handleTransfer({
 
   if (rawEvent.data[0] === '0x0'.toLowerCase() || rawEvent.data[1] === '0x0'.toLowerCase()) return;
 
-  // if (!(await isErc20(rawEvent.from_address, block.block_number))) return;
   const format = 'from, to, value(uint256)';
   const data: any = getEvent(rawEvent.data, format);
   let token: Token;
@@ -38,7 +37,6 @@ export async function handleTransfer({
   } else {
     token = await loadToken(rawEvent.from_address, mysql);
   }
-
   // If accounts aren't indexed yet we add them, else we load them
   // First with fromAccount
   const fromId = `${token.id.slice(2)}-${data.from.slice(2)}`;
@@ -58,10 +56,6 @@ export async function handleTransfer({
     toAccount = await loadAccount(toId, mysql);
   }
 
-  console.log('data.from', data.from);
-  console.log('data.to', data.to);
-  console.log('data.value', convertToDecimal(data.value, token.decimals));
-
   const agrFromId = `${data.from.slice(2)}-${data.to.slice(2)}`;
   if (await newAggreg(agrFromId, mysql)) {
     aggregatedTxFrom = await createAggregated(agrFromId, token, data.from, data.to, block);
@@ -71,12 +65,13 @@ export async function handleTransfer({
   }
 
   const agrToId = `${data.to.slice(2)}-${data.from.slice(2)}`;
+
   // Then with toAccount
   if (await newAggreg(agrToId, mysql)) {
     aggregatedTxTo = await createAggregated(agrToId, token, data.to, data.from, block);
     await mysql.queryAsync(`INSERT IGNORE INTO aggregatedtransactions SET ?`, [aggregatedTxTo]);
   } else {
-    aggregatedTxTo = await loadAggregated(agrToId, block);
+    aggregatedTxTo = await loadAggregated(agrToId, mysql);
   }
 
   // Updating raw balances
@@ -88,9 +83,6 @@ export async function handleTransfer({
   // Updating modified field
   aggregatedTxFrom.modified = block.timestamp;
   aggregatedTxTo.modified = block.timestamp;
-
-  console.log('aggregatedTxFrom', aggregatedTxFrom);
-  console.log('aggregatedTxTo', aggregatedTxTo);
 
   await mysql.queryAsync(
     `UPDATE aggregatedtransactions SET rawValue=${aggregatedTxFrom.rawValue.toString()}, value=${
