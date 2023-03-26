@@ -20,6 +20,8 @@ export async function handleTransfer({
 
   if (rawEvent.data[0] === '0x0'.toLowerCase() || rawEvent.data[1] === '0x0'.toLowerCase()) return;
 
+  console.log('Transfer event found:', rawEvent);
+
   const format = 'from, to, value(uint256)';
   const data: any = getEvent(rawEvent.data, format);
   let token: Token;

@@ -1,9 +1,10 @@
 {
   "network_node_url": "https://starknet-mainnet.infura.io/v3/1dbe991732f94d4082647ef697d9bf7f",
+  "start": 2800,
   "sources": [
     {
       "contract": "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-      "start": 23000,
+      "start": 2800,
       "events": [
         {
           "name": "Transfer",
