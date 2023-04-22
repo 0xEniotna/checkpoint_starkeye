@@ -24,6 +24,8 @@ type AggregatedTransaction {
   to: String
   rawValue: String # Raw value without decimals
   value: Float # Parsed value based on token decimals
+  rawAbsVolume: String # Raw absolute value without decimals
+  absVolume: Float # Parsed absolute value based on token decimals
   token: Token
   modified: Int # Last modified timestamp in seconds
 }
